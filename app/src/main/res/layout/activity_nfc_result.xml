@@ -1,0 +1,130 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="#F5F6FA">
+
+    <!-- ===== HEADER ===== -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="56dp"
+        android:orientation="horizontal"
+        android:gravity="center_vertical"
+        android:paddingHorizontal="16dp"
+        android:background="@color/white"
+        android:elevation="4dp">
+
+        <TextView
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="Kết quả"
+            android:textSize="18sp"
+            android:textStyle="bold"
+            android:textColor="#111111" />
+
+        <ImageView
+            android:id="@+id/btnClose"
+            android:layout_width="24dp"
+            android:layout_height="24dp"
+            android:src="@android:drawable/ic_menu_close_clear_cancel"
+            app:tint="#444444" />
+    </LinearLayout>
+
+    <!-- ===== CONTENT ===== -->
+    <ScrollView
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:layout_marginTop="56dp"
+        android:overScrollMode="never">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:padding="16dp">
+
+            <!-- ===== FACE IMAGE ===== -->
+            <ImageView
+                android:id="@+id/ivFace"
+                android:layout_width="120dp"
+                android:layout_height="160dp"
+                android:layout_gravity="center"
+                android:background="@drawable/bg_image_card"
+                android:scaleType="centerCrop" />
+
+            <!-- ===== CARD ===== -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="16dp"
+                android:background="@drawable/bg_card"
+                android:orientation="vertical"
+                android:padding="16dp">
+
+                <!-- SECTION -->
+                <TextView
+                    android:text="Thông tin cá nhân"
+                    style="@style/TextSectionTitle" />
+
+                <TextView android:id="@+id/tvName" style="@style/TextValue" />
+                <TextView android:id="@+id/tvId" style="@style/TextValue" />
+                <TextView android:id="@+id/tvOldId" style="@style/TextValue" />
+                <TextView android:id="@+id/tvDob" style="@style/TextValue" />
+                <TextView android:id="@+id/tvGender" style="@style/TextValue" />
+                <TextView android:id="@+id/tvNationality" style="@style/TextValue" />
+                <TextView android:id="@+id/tvNation" style="@style/TextValue" />
+                <TextView android:id="@+id/tvReligion" style="@style/TextValue" />
+
+                <View
+                    android:layout_width="match_parent"
+                    android:layout_height="1dp"
+                    android:layout_marginVertical="12dp"
+                    android:background="#E0E0E0" />
+
+                <TextView
+                    android:text="Địa chỉ"
+                    style="@style/TextSectionTitle" />
+
+                <TextView android:id="@+id/tvHometown" style="@style/TextValue" />
+                <TextView android:id="@+id/tvAddress" style="@style/TextValue" />
+
+                <View
+                    android:layout_width="match_parent"
+                    android:layout_height="1dp"
+                    android:layout_marginVertical="12dp"
+                    android:background="#E0E0E0" />
+
+                <TextView
+                    android:text="Giấy tờ"
+                    style="@style/TextSectionTitle" />
+                <TextView android:id="@+id/tvPersonalId" style="@style/TextValue" />
+                <TextView android:id="@+id/tvIssueDate" style="@style/TextValue" />
+                <TextView android:id="@+id/tvExpiryDate" style="@style/TextValue" />
+                <TextView android:id="@+id/tvMrz" style="@style/TextValue" />
+                <View
+                    android:layout_width="match_parent"
+                    android:layout_height="1dp"
+                    android:layout_marginVertical="12dp"
+                    android:background="#E0E0E0" />
+                <TextView
+                    android:text="Gia đình"
+                    style="@style/TextSectionTitle" />
+
+                <TextView android:id="@+id/tvFather" style="@style/TextValue" />
+                <TextView android:id="@+id/tvMother" style="@style/TextValue" />
+                <TextView android:id="@+id/tvSpouse" style="@style/TextValue" />
+
+                <View
+                    android:layout_width="match_parent"
+                    android:layout_height="1dp"
+                    android:layout_marginVertical="12dp"
+                    android:background="#E0E0E0" />
+
+            </LinearLayout>
+
+        </LinearLayout>
+    </ScrollView>
+
+</FrameLayout>

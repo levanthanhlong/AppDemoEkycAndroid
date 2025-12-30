@@ -1,0 +1,38 @@
+<resources>
+
+    <style name="AppTheme" parent="Theme.AppCompat.Light.NoActionBar">
+        <item name="colorPrimary">#0052CC</item>
+        <item name="colorPrimaryDark">#003A8F</item>
+        <item name="colorAccent">#0052CC</item>
+    </style>
+
+    <style name="TextSectionTitle">
+        <item name="android:layout_width">match_parent</item>
+        <item name="android:layout_height">wrap_content</item>
+
+        <item name="android:textSize">15sp</item>
+        <item name="android:textStyle">bold</item>
+        <item name="android:textColor">#333333</item>
+        <item name="android:layout_marginBottom">8dp</item>
+    </style>
+
+
+
+    <style name="Divider">
+        <item name="android:layout_width">match_parent</item>
+        <item name="android:layout_height">1dp</item>
+        <item name="android:background">#E0E0E0</item>
+        <item name="android:layout_marginVertical">12dp</item>
+    </style>
+
+
+    <style name="TextValue">
+        <item name="android:layout_width">match_parent</item>
+        <item name="android:layout_height">wrap_content</item>
+        <item name="android:textSize">14sp</item>
+        <item name="android:textColor">#444444</item>
+        <item name="android:layout_marginTop">4dp</item>
+    </style>
+
+
+</resources>
