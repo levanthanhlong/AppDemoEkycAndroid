@@ -10,34 +10,29 @@ import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import ic.kyc.demo.util.AppConst
-import android.os.Environment
+import android.util.Base64
 
 import ic.kyc.demo.util.DataUtil
 
-
+import com.mobilecs.cmcekyc_sdk.models.CmcEkycSdkMediaType
 import com.mobilecs.cmcekyc_sdk.CmcEkycSdk
 import com.mobilecs.cmcekyc_sdk.configs.CmcEkycConfig
+import com.mobilecs.cmcekyc_sdk.handles.CmcRequestListener
 import ic.kyc.demo.auth.logout
 import ic.kyc.demo.screen.auth.LoginActivity
 import ic.kyc.demo.screen.nfc.NfcResultActivity
 import okhttp3.MediaType.Companion.toMediaType
+import okhttp3.MultipartBody
 import okhttp3.OkHttpClient
 import okhttp3.Request
+import okhttp3.RequestBody.Companion.asRequestBody
 import okhttp3.RequestBody.Companion.toRequestBody
 import org.json.JSONObject
-import vn.kalapa.ekyc.KalapaHandler
-import vn.kalapa.ekyc.KalapaSDK
-import vn.kalapa.ekyc.KalapaSDKConfig
-import vn.kalapa.ekyc.KalapaSDKResultCode
-import vn.kalapa.ekyc.KalapaScanNFCCallback
-import vn.kalapa.ekyc.KalapaScanNFCError
-import vn.kalapa.ekyc.models.KalapaResult
+import vn.kalapa.ekyc.KalapaSDKMediaType
+import vn.kalapa.ekyc.managers.AESCryptor
 import vn.kalapa.ekyc.models.NFCRawData
 import java.io.File
 import java.io.IOException
-import java.text.SimpleDateFormat
-import java.util.Date
-import java.util.Locale
 
 class MainActivity : AppCompatActivity() {
 
@@ -157,297 +152,504 @@ class MainActivity : AppCompatActivity() {
                     .show()
             },
 
+            onProcessCapture = { documentBase64, documentType, listener ->
+                processCaptureValidate(
+                    documentBase64,
+                    documentType,
+                    AppConst.BASEURL_CA,
+                    DataUtil.SESSION_ID_CA.toString(),
+                    DataUtil.TOKEN.toString(),
+                )
+
+                callDocumentScanApiKala(
+                    documentBase64 = documentBase64,
+                    documentType = documentType,
+                    baseUrl = AppConst.BASEURL,
+                    sessionId = DataUtil.SESSION_ID_Kala.toString(),
+                    listener = listener
+                )
+            },
 
             onProcessNFC = { idCardNumber, nfcRawData, listener ->
-                // Chuyển đổi nfcRawData (String) thành đối tượng NFCRawData
-                val nfcData = NFCRawData.fromJson(nfcRawData)
-
-                // Bạn có thể log hoặc kiểm tra thông tin trong NFCRawData nếu cần
-                Log.d(TAG, "Received NFC Data: ${nfcData.dg1}")
-                // Chạy một background thread để gọi API
-                    try {
-                        // Log trước khi tạo JSON body
-                        Log.d(TAG, "Preparing NFC data to send: $nfcData")
-
-                        // Tạo JSON body cho API từ dữ liệu NFC
-                        val jsonBody = JSONObject().apply {
-                            put("sodData", nfcData.sod)
-                            put("dg1DataB64", nfcData.dg1)
-                            put("dg2DataB64", nfcData.dg2)
-                            put("dg13DataB64", nfcData.dg13)
-                            put("dg14DataB64", nfcData.dg14)
-                            put("dg15DataB64", nfcData.dg15)
-                            put("dg16DataB64", nfcData.dg16)
-                        }
-
-                        // Log dữ liệu JSON đã chuẩn bị
-                        Log.d(TAG, "Sending NFC data to API: $jsonBody")
-
-                        // Gọi API để gửi dữ liệu NFC
-                        val response = sendToYourAPI(
-                            url = "https://csign.cmcuat.cloud/api/ekyc/card/validate",
-                            jsonBody = jsonBody,
-                            sessionId = DataUtil.SESSION_ID_CA.toString(),
-                            token = DataUtil.TOKEN.toString()
-                        )
-
-                        // Log phản hồi từ API
-                        Log.d(TAG, "API Response: $response")
-
-                        // Nếu thành công, gọi listener.onSuccess() để tiếp tục
-                        listener.onSuccess(response)
-                        Log.d(TAG, "Card validation successful")
-
-                    } catch (e: Exception) {
-                        // Log chi tiết lỗi
-                        Log.e(TAG, "Error during NFC validation: ${e.message}", e)
-
-                        // Xử lý lỗi nếu có
-                        listener.onError(
-                            errorCode = 500,
-                            message = e.message ?: "NFC validation error"
-                        )
-                    }
-
+                processNfcAndValidate(
+                    nfcRawData,
+                    AppConst.BASEURL_CA,
+                    DataUtil.SESSION_ID_CA.toString(),
+                    DataUtil.TOKEN.toString()
+                )
+                callNfcVerifyApiKala(
+                    nfcRawData = nfcRawData,
+                    baseUrl = AppConst.BASEURL,
+                    sessionId = DataUtil.SESSION_ID_Kala.toString(),
+                    listener = listener
+                )
             },
 
             onProcessLiveness = { portraitBase64, listener ->
-                Thread {
-                    try {
-                        val response = callFaceVerifyApi(
-                            liveImageBase64 = portraitBase64,
-                            sessionId = DataUtil.SESSION_ID_CA.toString(),
-                            token = DataUtil.TOKEN.toString()
-                        )
-                        listener.onSuccess(response)
-                    } catch (e: Exception) {
-                        Log.e("CMC_EKYC", "processLivenessData error", e)
-                        listener.onError(
-                            errorCode = 500,
-                            message = e.message ?: "Face verify failed"
-                        )
-                    }
-                }.start()
-            }
+                processLivenessAndVerify(
+                    portraitBase64,
+                    AppConst.BASEURL_CA,
+                    DataUtil.SESSION_ID_CA.toString(),
+                    DataUtil.TOKEN.toString()
+                )
+                callLivenessCheckApiKala(
+                    portraitBase64 = portraitBase64,
+                    baseUrl = AppConst.BASEURL,
+                    sessionId = DataUtil.SESSION_ID_Kala.toString(),
+                    listener = listener
+                )
 
+            }
         )
         CmcEkycSdk.start(this, config)
     }
 
-    fun sendToYourAPI(url: String, jsonBody: JSONObject, sessionId: String, token: String): JSONObject {
+
+    // CMC API
+    fun postJsonWithAuth(
+        url: String,
+        jsonBody: JSONObject,
+        sessionId: String,
+        token: String
+    ): JSONObject {
         val client = OkHttpClient()
 
-        // Tạo request body từ JSON
-        val requestBody = jsonBody.toString().toRequestBody("application/json".toMediaType())
+        val requestBody = jsonBody
+            .toString()
+            .toRequestBody("application/json".toMediaType())
 
-        // Tạo request
         val request = Request.Builder()
             .url(url)
             .post(requestBody)
             .addHeader("Content-Type", "application/json")
-            .addHeader("X-EKYC-Session-Id", sessionId) // Thêm sessionId vào header
-            .addHeader("Authorization", "Bearer $token") // Thêm token vào header
+            .addHeader("X-EKYC-Session-Id", sessionId)
+            .addHeader("Authorization", "Bearer $token")
             .build()
 
-        // Gửi yêu cầu và xử lý phản hồi
         try {
-            val response = client.newCall(request).execute()
-
-            if (response.isSuccessful) {
-                // Chuyển đổi phản hồi thành JSONObject và trả về
-                val responseBody = response.body?.string()
-                return JSONObject(responseBody)
-            } else {
-                // Nếu không thành công, trả về thông báo lỗi
-                throw IOException("Error response: ${response.code}")
-            }
-        } catch (e: Exception) {
-            throw IOException("Request failed: ${e.message}")
-        }
-    }
-
-    fun callFaceVerifyApi(
-        liveImageBase64: String,
-        sessionId: String,
-        token: String
-    ): JSONObject {
-        Log.e("CMC_EKYC", "Face verify -- START --")
-
-        try {
-            // Build JSON body
-            val jsonBody = JSONObject().apply {
-                put("liveImage", liveImageBase64)
-            }
-            val client = OkHttpClient()
-
-            val requestBody = jsonBody
-                .toString()
-                .toRequestBody("application/json".toMediaType())
-
-            val request = Request.Builder()
-                .url("https://csign.cmcuat.cloud/api/ekyc/face/verify")
-                .post(requestBody)
-                .addHeader("X-EKYC-Session-Id", sessionId)
-                .addHeader("Authorization", "Bearer $token")
-                .build()
-
-            Log.e("CMC_EKYC", "Face verify -- REQUEST SENT --")
-
             client.newCall(request).execute().use { response ->
                 val responseBody = response.body?.string()
 
-                Log.e(
+                Log.d(
                     "CMC_EKYC",
-                    "Face verify -- RESPONSE code=${response.code}, body=${responseBody?.take(300)}"
+                    "POST $url -> code=${response.code}, body=${responseBody?.take(300)}"
                 )
 
                 if (!response.isSuccessful) {
-                    throw IOException("Face verify failed: HTTP ${response.code}")
+                    throw IOException("HTTP ${response.code}")
                 }
 
                 if (responseBody.isNullOrEmpty()) {
-                    throw IOException("Face verify empty response body")
+                    throw IOException("Empty response body")
                 }
 
                 return JSONObject(responseBody)
             }
-
         } catch (e: Exception) {
-            Log.e(
-                "CMC_EKYC",
-                "Face verify -- ERROR -- ${e.message}",
-                e
-            )
+            Log.e("CMC_EKYC", "POST $url FAILED: ${e.message}", e)
             throw e
-        } finally {
-            Log.e("CMC_EKYC", "Face verify -- END --")
         }
     }
 
 
-
-    private fun writeDebugToFile(
-        tag: String,
+    fun processCaptureValidate(
+        documentBase64: String,
+        documentType: CmcEkycSdkMediaType,
+        baseUrl: String,
         sessionId: String,
         token: String,
-        body: String
     ) {
-        try {
-            val dir = Environment.getExternalStoragePublicDirectory(
-            Environment.DIRECTORY_DOCUMENTS
-        )
+        Thread {
+            try {
+                // 1. Chọn URL theo loại giấy tờ
+                val url = if (documentType == CmcEkycSdkMediaType.FRONT) {
+                    "$baseUrl/api/ekyc/kalapa/scan-front"
+                } else {
+                    "$baseUrl/api/ekyc/kalapa/scan-back"
+                }
 
-            if (!dir.exists()) dir.mkdirs()
+                // 1. Build JSON body
+                val jsonBody = JSONObject().apply {
+                    put("image", documentBase64)
+                }
+                // 2. Call API
+                val response = postJsonWithAuth(
+                    url = url,
+                    jsonBody = jsonBody,
+                    sessionId = sessionId,
+                    token = token
+                )
+                // 3. Check success
+                val success = response.optBoolean("success", false)
 
-            val file = File(dir, "ekyc_debug.txt")
+                if (success) {
+                    Log.d(TAG, "CMC check document - success: $response")
+                } else {
+                    val errorMessage = response
+                        .optJSONArray("errors")
+                        ?.optJSONObject(0)
+                        ?.optString("message")
+                        ?: "document verify failed"
+                }
 
-            val time = SimpleDateFormat(
-                "yyyy-MM-dd HH:mm:ss",
-                Locale.getDefault()
-            ).format(Date())
-
-            val content = """
-            ===== $time =====
-            TAG: $tag
-            SESSION_ID: $sessionId
-            TOKEN: $token
-            BODY:
-            $body
-            
-            
-        """.trimIndent()
-
-            file.appendText(content)
-        } catch (e: Exception) {
-            Log.e("CMC_EKYC", "Write file error", e)
-        }
+            } catch (e: Exception) {
+                Log.e("CMC_EKYC", "processCaptureValidate error", e)
+            }
+        }.start()
     }
 
-    private fun startKalapaNfc() {
-        if (!checkNfc()) return
-        val sdkConfig = KalapaSDKConfig.KalapaSDKConfigBuilder(this)
-            .withBackgroundColor("#FFFFFF")
-            .withMainColor("#0066FF")
-            .withBtnTextColor("#FFFFFF")
-            .withMainTextColor("#000000")
-            .withLanguage("vi") // "vi" | "en"
-            .withLivenessVersion(2) // 1 | 2 | 3
-            .withNFCTimeoutInSeconds(60)
-            .withBaseURL(AppConst.BASEURL)
+    fun processNfcAndValidate(
+        nfcRawData: String,
+        baseUrl: String,
+        sessionId: String,
+        token: String,
+    ) {
+        Thread {
+            try {
+                // 1. Parse NFC raw data
+                val nfcData = NFCRawData.fromJson(nfcRawData)
+                Log.d(TAG, "Received NFC Data: dg1=${nfcData.dg1}")
+
+                // 2. Build JSON body
+                val jsonBody = JSONObject().apply {
+                    put("sodData", nfcData.sod)
+                    put("dg1DataB64", nfcData.dg1)
+                    put("dg2DataB64", nfcData.dg2)
+                    put("dg13DataB64", nfcData.dg13)
+                    put("dg14DataB64", nfcData.dg14)
+                    put("dg15DataB64", nfcData.dg15)
+                    put("dg16DataB64", nfcData.dg16)
+                }
+
+                Log.d(TAG, "Sending NFC data to API: $jsonBody")
+
+                // 3. Call API
+                val response = postJsonWithAuth(
+                    url = "$baseUrl/api/ekyc/card/validate",
+                    jsonBody = jsonBody,
+                    sessionId = sessionId,
+                    token = token
+                )
+
+                Log.d(TAG, "NFC API Response: $response")
+
+                // 4. Check success
+                val success = response.optBoolean("success", false)
+
+                if (success) {
+                    Log.d(TAG, " CMC check - Card validation successful")
+                } else {
+                    val errorMessage = response
+                        .optJSONArray("errors")
+                        ?.optJSONObject(0)
+                        ?.optString("message")
+                        ?: "NFC validation failed"
+                }
+
+            } catch (e: Exception) {
+                Log.e(TAG, "Error during NFC validation", e)
+            }
+        }.start()
+    }
+
+    fun processLivenessAndVerify(
+        portraitBase64: String,
+        baseUrl: String,
+        sessionId: String,
+        token: String,
+    ) {
+        Thread {
+            try {
+                // 1. Build JSON body
+                val jsonBody = JSONObject().apply {
+                    put("liveImage", portraitBase64)
+                }
+                // 2. Call API
+                val response = postJsonWithAuth(
+                    url = "$baseUrl/api/ekyc/face/verify",
+                    jsonBody = jsonBody,
+                    sessionId = sessionId,
+                    token = token
+                )
+                // 3. Check success
+                val success = response.optBoolean("success", false)
+
+                if (success) {
+                    Log.d(TAG, "CMC check - Face match")
+                } else {
+                    val errorMessage = response
+                        .optJSONArray("errors")
+                        ?.optJSONObject(0)
+                        ?.optString("message")
+                        ?: "Face verify failed"
+                }
+
+            } catch (e: Exception) {
+                Log.e("CMC_EKYC", "processLivenessAndVerify error", e)
+            }
+        }.start()
+    }
+
+
+    // kalapa api
+    fun postMultipart(
+        url: String,
+        headers: Map<String, String> = emptyMap(),
+        formBuilder: MultipartBody.Builder.() -> Unit
+    ): JSONObject {
+
+        val client = OkHttpClient()
+
+        val requestBody = MultipartBody.Builder()
+            .setType(MultipartBody.FORM)
+            .apply(formBuilder)
             .build()
 
-        val kalapaHandler = object : KalapaHandler() {
-            override fun onNFCErrorHandle(
-                activity: Activity,
-                error: KalapaScanNFCError,
-                callback: KalapaScanNFCCallback
-            ) {
-                Log.e("KALAPA", "NFC error: $error")
+        val requestBuilder = Request.Builder()
+            .url(url)
+            .post(requestBody)
+            .addHeader("accept", "application/json")
 
-                runOnUiThread {
-                    AlertDialog.Builder(activity)
-                        .setTitle("Lỗi NFC")
-                        .setMessage(error.name)
-                        .setPositiveButton("Thử lại") { _, _ ->
-                            callback.onRetry()
-                        }
-                        .setNegativeButton("Thoát") { _, _ ->
-                            callback.close { activity.finish() }
-                        }
-                        .show()
-                }
-            }
-
-            override fun onComplete(kalapaResult: KalapaResult) {
-                Log.d("KALAPA", "Complete result: $kalapaResult")
-                Log.d("KALAPA", "Complete nfc_data name : ${kalapaResult.nfc_data?.name}")
-                // Ví dụ lấy NFC data
-                val nfcData = kalapaResult.nfc_data
-                val decision = kalapaResult.decision
-
-                runOnUiThread {
-                    Toast.makeText(
-                        this@MainActivity,
-                        "Kết quả: $decision",
-                        Toast.LENGTH_LONG
-                    ).show()
-                }
-
-                // TODO: map data, chuyển màn, gửi Flutter EventChannel...
-            }
-
-            override fun onError(resultCode: KalapaSDKResultCode) {
-                Log.e("KALAPA", "SDK error: $resultCode")
-
-                runOnUiThread {
-                    Toast.makeText(
-                        this@MainActivity,
-                        "SDK lỗi: ${resultCode.vi}",
-                        Toast.LENGTH_LONG
-                    ).show()
-                }
-            }
-
-            override fun onExpired() {
-                Log.w("KALAPA", "Session expired")
-
-                runOnUiThread {
-                    Toast.makeText(
-                        this@MainActivity,
-                        "Session hết hạn, vui lòng thử lại",
-                        Toast.LENGTH_LONG
-                    ).show()
-                }
-                // TODO: init session mới rồi start lại SDK
-            }
+        headers.forEach { (key, value) ->
+            requestBuilder.addHeader(key, value)
         }
 
-        KalapaSDK.KalapaSDKBuilder(this, sdkConfig).build().start(
-            DataUtil.SESSION_ID_Kala.toString(),
-            "nfc_ekyc", // "ekyc" | "nfc_ekyc" | "nfc_only"
-            kalapaHandler
-        )
+        val request = requestBuilder.build()
+
+        try {
+            client.newCall(request).execute().use { response ->
+                val responseBody = response.body?.string()
+
+                Log.d(
+                    "CMC_EKYC",
+                    "POST $url -> code=${response.code}, body=${responseBody?.take(300)}"
+                )
+
+                if (!response.isSuccessful) {
+                    throw IOException("HTTP ${response.message}")
+                }
+
+                if (responseBody.isNullOrEmpty()) {
+                    throw IOException("Empty response body")
+                }
+
+                return JSONObject(responseBody)
+            }
+        } catch (e: Exception) {
+            Log.e("CMC_EKYC", "POST multipart FAILED: $url", e)
+            throw e
+        }
     }
+
+    fun callNfcVerifyApiKala(
+        nfcRawData: String,
+        baseUrl: String,
+        sessionId: String,
+        listener: CmcRequestListener
+    ) {
+        Thread {
+            try {
+                val client = OkHttpClient()
+
+                val encryptedData = AESCryptor.encryptText(nfcRawData)
+
+                val body = JSONObject()
+                    .put("data", encryptedData)
+                    .toString()
+                    .toRequestBody("application/json".toMediaType())
+
+                val request = Request.Builder()
+                    .url("$baseUrl/api/nfc/verify")
+                    .post(body)
+                    .addHeader("Content-Type", "application/json")
+                    .addHeader("Authorization", sessionId)
+                    .build()
+
+                client.newCall(request).execute().use { response ->
+                    val responseBody = response.body?.string()
+                        ?: throw IOException("Empty response body")
+
+                    val json = JSONObject(responseBody)
+                    Log.d("CMC_EKYC", "onProcessNFC response: $json")
+
+                    if (json.has("error")) {
+                        val errorObj = json.optJSONObject("error")
+                        val errorCode = errorObj?.optInt("code") ?: 0
+                        val errorMessage = errorObj?.optString("message") ?: ""
+
+                        if (errorCode == 200) {
+                            listener.onSuccess(json)
+                        } else {
+                            Log.w(
+                                "CMC_EKYC",
+                                "NFC business error: code=$errorCode, message=$errorMessage"
+                            )
+                            listener.onError(errorCode, errorMessage)
+                        }
+                    } else {
+                        // Trường hợp backend không trả field error
+                        listener.onSuccess(json)
+                    }
+                }
+
+            } catch (e: Exception) {
+                Log.e("CMC_EKYC", "callNfcVerifyApi exception", e)
+                when {
+                    e is java.net.SocketTimeoutException ->
+                        listener.onTimeout()
+
+                    else ->
+                        listener.onError(400, e.message ?: "Unknown error")
+                }
+            }
+        }.start()
+    }
+
+    fun callDocumentScanApiKala(
+        documentBase64: String,
+        documentType: CmcEkycSdkMediaType,
+        baseUrl: String,
+        sessionId: String,
+        listener: CmcRequestListener
+    ) {
+        Thread {
+            try {
+                // 1. Chọn URL theo loại giấy tờ
+                val url = if (documentType == CmcEkycSdkMediaType.FRONT) {
+                    "$baseUrl/api/kyc/scan-front"
+                } else {
+                    "$baseUrl/api/kyc/scan-back"
+                }
+
+                // 2. Decode base64 → file tạm
+                val imageBytes = Base64.decode(documentBase64, Base64.DEFAULT)
+
+                val tempFile = File.createTempFile("document_", ".jpg")
+                tempFile.writeBytes(imageBytes)
+
+                // 3. Gọi API multipart
+                val response = postMultipart(
+                    url = url,
+                    headers = mapOf(
+                        "Authorization" to sessionId
+                    )
+                ) {
+                    addFormDataPart(
+                        name = "image",
+                        filename = tempFile.name,
+                        body = tempFile.asRequestBody("image/jpeg".toMediaType())
+                    )
+                }
+
+                Log.d("CMC_EKYC", "onProcessCapture response: $response")
+
+                // 4. Parse response (giữ nguyên logic cũ)
+                if (response.has("error")) {
+                    val errorObj = response.optJSONObject("error")
+                    val errorCode = errorObj?.optInt("code") ?: 0
+                    val errorMessage = errorObj?.optString("message") ?: ""
+
+                    if (errorCode == 0) {
+                        Log.w(
+                            "CMC_EKYC",
+                            "onProcessCapture pass: code=$errorCode, message=$errorMessage"
+                        )
+                        listener.onSuccess(response)
+                    } else {
+                        Log.w(
+                            "CMC_EKYC",
+                            "onProcessCapture error: code=$errorCode, message=$errorMessage"
+                        )
+                        listener.onError(errorCode, errorMessage)
+                    }
+                } else {
+                    // Backend không trả error object
+                    listener.onSuccess(response)
+                }
+
+                // 5. Cleanup
+                tempFile.delete()
+
+            } catch (e: Exception) {
+                Log.e("CMC_EKYC", "callDocumentScanApi exception", e)
+                when {
+                    e is java.net.SocketTimeoutException ->
+                        listener.onTimeout()
+
+                    else ->
+                        listener.onError(400, e.message ?: "Unknown error")
+                }
+            }
+        }.start()
+    }
+
+
+    fun callLivenessCheckApiKala(
+        portraitBase64: String,
+        baseUrl: String,
+        sessionId: String,
+        listener: CmcRequestListener
+    ) {
+        Thread {
+            try {
+                // 1. Decode base64 → file tạm
+                val imageBytes = Base64.decode(portraitBase64, Base64.DEFAULT)
+
+                val tempFile = File.createTempFile("selfie_", ".jpg")
+                tempFile.writeBytes(imageBytes)
+
+                // 2. Gọi API multipart
+                val response = postMultipart(
+                    url = "$baseUrl/api/kyc/check-selfie",
+                    headers = mapOf(
+                        "Authorization" to sessionId
+                    )
+                ) {
+                    addFormDataPart(
+                        name = "image",
+                        filename = tempFile.name,
+                        body = tempFile.asRequestBody("image/jpeg".toMediaType())
+                    )
+                }
+
+                // 3. Parse response (giữ nguyên logic cũ)
+                if (response.has("error")) {
+                    val errorObj = response.optJSONObject("error")
+                    val errorCode = errorObj?.optInt("code") ?: 0
+                    val errorMessage = errorObj?.optString("message") ?: ""
+
+                    if (errorCode == 0) {
+                        Log.d("CMC_EKYC", "onProcessLiveness response: $response")
+                        listener.onSuccess(response)
+                    } else {
+                        Log.w(
+                            "CMC_EKYC",
+                            "onProcessLiveness error: code=$errorCode, message=$errorMessage"
+                        )
+                        listener.onError(errorCode, errorMessage)
+                    }
+                } else {
+                    // Backend không trả error object
+                    listener.onSuccess(response)
+                }
+
+                // 4. Cleanup
+                tempFile.delete()
+
+            } catch (e: Exception) {
+                Log.e("CMC_EKYC", "callLivenessCheckApi exception", e)
+
+                when {
+                    e is java.net.SocketTimeoutException ->
+                        listener.onTimeout()
+
+                    else ->
+                        listener.onError(400, e.message ?: "Unknown error")
+                }
+            }
+        }.start()
+    }
+
 
     private fun checkNfc(): Boolean {
         val manager = getSystemService(NFC_SERVICE) as? NfcManager

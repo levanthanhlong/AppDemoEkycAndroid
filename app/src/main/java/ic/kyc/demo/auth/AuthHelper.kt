@@ -15,7 +15,8 @@ import okhttp3.Request
 import okhttp3.RequestBody.Companion.toRequestBody
 
 data class GetTokenRequest(
-    val verify_check: Boolean = false,
+    val ekycSessionId: String = "uuid-of-existing-session",
+    val verify_check: Boolean = true,
     val fraud_check: Boolean = true,
     val accept_flash: Boolean = false,
     val strict_quality_check: Boolean = true,
