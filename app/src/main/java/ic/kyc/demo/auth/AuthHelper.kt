@@ -1,5 +1,8 @@
 package ic.kyc.demo.auth
-
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
+import java.security.SecureRandom
 import android.content.Context
 import android.content.Intent
 import android.util.Log
@@ -15,7 +18,7 @@ import okhttp3.Request
 import okhttp3.RequestBody.Companion.toRequestBody
 
 data class GetTokenRequest(
-    val ekycSessionId: String = "uuid-of-existing-session",
+    val ekycSessionId: String = DataUtil.SESSION_ID_CA.toString(),
     val verify_check: Boolean = true,
     val fraud_check: Boolean = true,
     val accept_flash: Boolean = false,
@@ -23,8 +26,19 @@ data class GetTokenRequest(
     val scan_full_information: Boolean = true,
     val allow_sdk_full_results: Boolean = true,
     val flow: String = AppConst.FLOW,
-    val clientTransactionId: String = "132001"
+    val clientTransactionId: String = generateClientTransactionId()
 )
+
+
+fun generateClientTransactionId(): String {
+    val dateFormat = SimpleDateFormat("yyyyMMddHHmmss", Locale.US)
+    val timestamp = dateFormat.format(Date()) // 14 ký tự
+
+    val secureRandom = SecureRandom()
+    val randomPart = secureRandom.nextInt(90000) + 10000 // 5 chữ số
+
+    return "${timestamp}_${randomPart}" // đúng 20 ký tự
+}
 
 data class GetTokenResponse(
     val token: String?,
@@ -44,7 +58,6 @@ suspend fun getSessionTokenKala(): String = withContext(Dispatchers.IO) {
     val url = "${AppConst.BASEURL}/api/auth/get-token"
     //val url = "${AppConst.BASEURL_CA}/api/ekyc/init"
     val jsonBody = Gson().toJson(GetTokenRequest())
-
     val body = jsonBody.toRequestBody("application/json".toMediaType())
 
     val request = Request.Builder()
@@ -56,6 +69,7 @@ suspend fun getSessionTokenKala(): String = withContext(Dispatchers.IO) {
 
     val client = OkHttpClient()
     client.newCall(request).execute().use { response ->
+
         if (!response.isSuccessful) {
             throw Exception("HTTP ${response.code}")
         }

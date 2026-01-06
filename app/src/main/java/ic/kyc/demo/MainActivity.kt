@@ -69,13 +69,16 @@ class MainActivity : AppCompatActivity() {
         val config = CmcEkycConfig(
             appId = AppConst.APP_ID,
             session = DataUtil.SESSION_ID_Kala,
+            session_CA = DataUtil.SESSION_ID_CA,
+            baseUrl_CA = AppConst.BASEURL_CA,
+            token_CA = DataUtil.TOKEN,
             baseUrl = AppConst.BASEURL, // BASEURL_CA || BASEURL
             language = "vi",
             mainColor = "#62A583",
             backgroundColor = "#FFFFFF",
             mainTextColor = "#000000",
             btnTextColor = "#FFFFFF",
-            livenessVersion = 3,
+            livenessVersion = 2,
             valueNFCTimeoutSeconds = 180,
             flow = AppConst.FLOW, // nfc_only, nfc_ekyc, ekyc
             // ====== Callbacks kết quả ======
@@ -104,7 +107,6 @@ class MainActivity : AppCompatActivity() {
                         Log.w("CmcNfcResultScreen", "nfc_data is null")
                     }
                 }
-
             },
 
             onError = { error ->
@@ -152,54 +154,54 @@ class MainActivity : AppCompatActivity() {
                     .show()
             },
 
-            onProcessCapture = { documentBase64, documentType, listener ->
-                processCaptureValidate(
-                    documentBase64,
-                    documentType,
-                    AppConst.BASEURL_CA,
-                    DataUtil.SESSION_ID_CA.toString(),
-                    DataUtil.TOKEN.toString(),
-                )
-
-                callDocumentScanApiKala(
-                    documentBase64 = documentBase64,
-                    documentType = documentType,
-                    baseUrl = AppConst.BASEURL,
-                    sessionId = DataUtil.SESSION_ID_Kala.toString(),
-                    listener = listener
-                )
-            },
-
-            onProcessNFC = { idCardNumber, nfcRawData, listener ->
-                processNfcAndValidate(
-                    nfcRawData,
-                    AppConst.BASEURL_CA,
-                    DataUtil.SESSION_ID_CA.toString(),
-                    DataUtil.TOKEN.toString()
-                )
-                callNfcVerifyApiKala(
-                    nfcRawData = nfcRawData,
-                    baseUrl = AppConst.BASEURL,
-                    sessionId = DataUtil.SESSION_ID_Kala.toString(),
-                    listener = listener
-                )
-            },
-
-            onProcessLiveness = { portraitBase64, listener ->
-                processLivenessAndVerify(
-                    portraitBase64,
-                    AppConst.BASEURL_CA,
-                    DataUtil.SESSION_ID_CA.toString(),
-                    DataUtil.TOKEN.toString()
-                )
-                callLivenessCheckApiKala(
-                    portraitBase64 = portraitBase64,
-                    baseUrl = AppConst.BASEURL,
-                    sessionId = DataUtil.SESSION_ID_Kala.toString(),
-                    listener = listener
-                )
-
-            }
+//            onProcessCapture = { documentBase64, documentType, listener ->
+//                processCaptureValidate(
+//                    documentBase64,
+//                    documentType,
+//                    AppConst.BASEURL_CA,
+//                    DataUtil.SESSION_ID_CA.toString(),
+//                    DataUtil.TOKEN.toString(),
+//                )
+//
+//                callDocumentScanApiKala(
+//                    documentBase64 = documentBase64,
+//                    documentType = documentType,
+//                    baseUrl = AppConst.BASEURL,
+//                    sessionId = DataUtil.SESSION_ID_Kala.toString(),
+//                    listener = listener
+//                )
+//            },
+//
+//            onProcessNFC = { idCardNumber, nfcRawData, listener ->
+//                processNfcAndValidate(
+//                    nfcRawData,
+//                    AppConst.BASEURL_CA,
+//                    DataUtil.SESSION_ID_CA.toString(),
+//                    DataUtil.TOKEN.toString()
+//                )
+//                callNfcVerifyApiKala(
+//                    nfcRawData = nfcRawData,
+//                    baseUrl = AppConst.BASEURL,
+//                    sessionId = DataUtil.SESSION_ID_Kala.toString(),
+//                    listener = listener
+//                )
+//            },
+//
+//            onProcessLiveness = { portraitBase64, listener ->
+//                processLivenessAndVerify(
+//                    portraitBase64,
+//                    AppConst.BASEURL_CA,
+//                    DataUtil.SESSION_ID_CA.toString(),
+//                    DataUtil.TOKEN.toString()
+//                )
+//                callLivenessCheckApiKala(
+//                    portraitBase64 = portraitBase64,
+//                    baseUrl = AppConst.BASEURL,
+//                    sessionId = DataUtil.SESSION_ID_Kala.toString(),
+//                    listener = listener
+//                )
+//
+//            }
         )
         CmcEkycSdk.start(this, config)
     }
@@ -582,7 +584,6 @@ class MainActivity : AppCompatActivity() {
             }
         }.start()
     }
-
 
     fun callLivenessCheckApiKala(
         portraitBase64: String,
