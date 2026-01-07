@@ -12,10 +12,13 @@ import ic.kyc.demo.util.AppConst
 import ic.kyc.demo.util.DataUtil
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import okhttp3.Call
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.RequestBody.Companion.toRequestBody
+import okhttp3.Response
+import java.io.IOException
 
 data class GetTokenRequest(
     val ekycSessionId: String = DataUtil.SESSION_ID_CA.toString(),
@@ -45,8 +48,6 @@ data class GetTokenResponse(
     val short_token: String?,
     val ekycSessionId: String?,
 )
-
-
 
 /* =======================
    API CALL
@@ -117,9 +118,63 @@ suspend fun getSessionTokenCA(): String = withContext(Dispatchers.IO) {
         // GÁN SESSION_ID
         DataUtil.SESSION_ID_CA =  result.ekycSessionId // short_token || ekycSessionId
         Log.d("SESSION_ID_CA", "Complete SESSION_ID_CA: ${DataUtil.SESSION_ID_CA}")
+        // 👉 SAU KHI CÓ SESSION → GỌI LẤY TOKEN KLP
+        val token = getTokenSessionCAFromKLP()
+        // ✅ GÁN TOKEN
+        DataUtil.TOKEN_CA_KLP = token
+        Log.d("TOKEN_CA_KLP", "Complete TOKEN_CA_KLP: ${DataUtil.TOKEN_CA_KLP}")
+
+        Log.d("TOKEN_CA_KLP", "Complete TOKEN_CA_KLP: ${DataUtil.TOKEN_CA_KLP}")
         return@withContext result.ekycSessionId.toString()
     }
 }
+
+suspend fun getTokenSessionCAFromKLP(): String = withContext(Dispatchers.IO) {
+    val url = "${AppConst.BASEURL_CA}/api/ekyc/kalapa/init-session"
+
+    val bodyObject = GetTokenRequest(
+        ekycSessionId = DataUtil.SESSION_ID_CA.toString(),
+        verify_check = false,
+        fraud_check = true,
+        accept_flash = false,
+        strict_quality_check = true,
+        scan_full_information = true,
+        allow_sdk_full_results = true,
+        flow = AppConst.FLOW
+    )
+
+    val jsonBody = Gson().toJson(bodyObject)
+    val body = jsonBody.toRequestBody("application/json".toMediaType())
+
+    val request = Request.Builder()
+        .url(url)
+        .post(body)
+        .addHeader("Authorization", "Bearer ${DataUtil.TOKEN}")
+        .addHeader("Content-Type", "application/json")
+        .build()
+
+    val client = OkHttpClient()
+
+    client.newCall(request).execute().use { response ->
+
+        if (!response.isSuccessful) {
+            throw Exception("HTTP ${response.code}")
+        }
+
+        val responseBody = response.body?.string()
+            ?: throw Exception("Empty response")
+
+        // ✅ Log raw response (giống Swift)
+        Log.d("TOKEN_CA_KLP", "Raw response: $responseBody")
+
+        val result = Gson().fromJson(responseBody, GetTokenResponse::class.java)
+
+
+        return@withContext result.token.toString()
+    }
+}
+
+
 
 fun logout(context: Context) {
     // Clear local token

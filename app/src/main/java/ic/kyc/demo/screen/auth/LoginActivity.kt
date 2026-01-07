@@ -68,27 +68,3 @@ class LoginActivity : AppCompatActivity() {
     }
 }
 
-
-data class GetTokenRequest(
-    val verify_check: Boolean = false,
-    val fraud_check: Boolean = true,
-    val accept_flash: Boolean = false,
-    val strict_quality_check: Boolean = true,
-    val scan_full_information: Boolean = true,
-    val allow_sdk_full_results: Boolean = true,
-    val flow: String = "nfc_ekyc"
-)
-
-data class GetTokenResponse(
-    val token: String,
-    val short_token: String,
-    val client_id: String,
-    val flow: String,
-    val document_type: String?,
-    val verify_check: Boolean,
-    val fraud_check: Boolean,
-    val accept_flash: Boolean,
-    val strict_quality_check: Boolean,
-    val scan_full_information: Boolean
-)
-
