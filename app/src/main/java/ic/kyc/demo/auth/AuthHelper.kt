@@ -191,10 +191,10 @@ fun logout(context: Context) {
 }
 
 
-suspend fun loginCA(): String = withContext(Dispatchers.IO) {
+suspend fun loginCA(username: String, password: String ): String = withContext(Dispatchers.IO) {
     val url = "${AppConst.BASEURL_CA}/api/auth/login"
 
-    val jsonBody = Gson().toJson(LoginRequest("org01", "org123"))
+    val jsonBody = Gson().toJson(LoginRequest(username, password))
 
     val body = jsonBody.toRequestBody("application/json".toMediaType())
 

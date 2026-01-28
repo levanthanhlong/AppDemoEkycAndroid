@@ -47,7 +47,7 @@ class LoginActivity : AppCompatActivity() {
         lifecycleScope.launch {
             try {
                 delay(800)
-                loginCA()
+                loginCA(username, password)
                 getSessionTokenCA()
                 getSessionTokenKala()
                 if (isNavigated) return@launch

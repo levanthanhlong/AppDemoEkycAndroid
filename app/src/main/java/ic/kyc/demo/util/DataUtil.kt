@@ -14,5 +14,6 @@ object DataUtil {
     var TOKEN_CA_KLP: String? = ""
     var NFC_VERIFIED_INFO: CmcNFCResultData? = null
 
-    var ACCESS_TOKEN_KALA: String = "5bb42ea331ee010001a0b7d7438s78vt8g62oul6943cra01xf28u48n"
+    //var ACCESS_TOKEN_KALA: String = "5bb42ea331ee010001a0b7d7438s78vt8g62oul6943cra01xf28u48n"
+    var ACCESS_TOKEN_KALA: String = "5bb42ea331ee010001a0b7d717238e5232zez797kxx5m4by5e3774w6"
 }

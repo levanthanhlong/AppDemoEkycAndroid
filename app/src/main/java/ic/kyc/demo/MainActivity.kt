@@ -1,6 +1,5 @@
 package ic.kyc.demo
 
-import android.app.Activity
 import android.content.Intent
 import android.nfc.NfcManager
 import android.os.Bundle
@@ -10,30 +9,16 @@ import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import ic.kyc.demo.util.AppConst
-import android.util.Base64
 
 import ic.kyc.demo.util.DataUtil
 
-import com.mobilecs.cmcekyc_sdk.models.CmcEkycSdkMediaType
 import com.mobilecs.cmcekyc_sdk.CmcEkycSdk
 import com.mobilecs.cmcekyc_sdk.configs.CmcEkycConfig
-import com.mobilecs.cmcekyc_sdk.handles.CmcRequestListener
+
 import ic.kyc.demo.auth.logout
 import ic.kyc.demo.screen.auth.LoginActivity
 import ic.kyc.demo.screen.nfc.NfcResultActivity
 import ic.kyc.demo.services.MyRawDataDelegate
-import okhttp3.MediaType.Companion.toMediaType
-import okhttp3.MultipartBody
-import okhttp3.OkHttpClient
-import okhttp3.Request
-import okhttp3.RequestBody.Companion.asRequestBody
-import okhttp3.RequestBody.Companion.toRequestBody
-import org.json.JSONObject
-import vn.kalapa.ekyc.KalapaSDKMediaType
-import vn.kalapa.ekyc.managers.AESCryptor
-import vn.kalapa.ekyc.models.NFCRawData
-import java.io.File
-import java.io.IOException
 
 class MainActivity : AppCompatActivity() {
 
@@ -69,8 +54,8 @@ class MainActivity : AppCompatActivity() {
         var rawDataDelegate = MyRawDataDelegate()
         val config = CmcEkycConfig(
             appId = AppConst.APP_ID,
-            isUseCmcGateway = false,
-            rawDataDelegate = rawDataDelegate,
+            isUseCmcGateway = true,
+            rawDataDelegate = null,
             session = DataUtil.SESSION_ID_Kala,
             session_CA = DataUtil.SESSION_ID_CA,
             baseUrl_CA = AppConst.BASEURL_CA,
