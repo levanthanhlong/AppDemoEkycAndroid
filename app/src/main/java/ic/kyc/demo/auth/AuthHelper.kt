@@ -88,10 +88,8 @@ suspend fun getSessionTokenKala(): String = withContext(Dispatchers.IO) {
 }
 
 
-suspend fun getSessionTokenCA(): String = withContext(Dispatchers.IO) {
+suspend fun getSessionTokenCAa(): String = withContext(Dispatchers.IO) {
 
-    // BASEURL_CA || BASEURL
-    //val url = "${AppConst.BASEURL}/api/auth/get-token"
     val url = "${AppConst.BASEURL_CA}/api/ekyc/init"
     val jsonBody = Gson().toJson(GetTokenRequest())
 
@@ -169,12 +167,11 @@ suspend fun getTokenSessionCAFromKLP(): String = withContext(Dispatchers.IO) {
 
         val result = Gson().fromJson(responseBody, GetTokenResponse::class.java)
 
+        DataUtil.SESSION_ID_Kala = result.short_token
 
         return@withContext result.token.toString()
     }
 }
-
-
 
 fun logout(context: Context) {
     // Clear local token
