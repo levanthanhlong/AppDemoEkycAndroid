@@ -21,7 +21,7 @@ import okhttp3.Response
 import java.io.IOException
 
 data class GetTokenRequest(
-    val ekycSessionId: String = DataUtil.SESSION_ID_CA.toString(),
+    val ekycSessionId: String = DataUtil.ekycSessionId.toString(),
     val verify_check: Boolean = true,
     val fraud_check: Boolean = true,
     val accept_flash: Boolean = false,
@@ -56,7 +56,7 @@ data class GetTokenResponse(
 suspend fun getSessionTokenKala(): String = withContext(Dispatchers.IO) {
 
     // BASEURL_CA || BASEURL
-    val url = "${AppConst.BASEURL}/api/auth/get-token"
+    val url = "${AppConst.BASEURL_CA}/api/ekyc/init"
     //val url = "${AppConst.BASEURL_CA}/api/ekyc/init"
     val jsonBody = Gson().toJson(GetTokenRequest())
     val body = jsonBody.toRequestBody("application/json".toMediaType())
@@ -88,7 +88,7 @@ suspend fun getSessionTokenKala(): String = withContext(Dispatchers.IO) {
 }
 
 
-suspend fun getSessionTokenCAa(): String = withContext(Dispatchers.IO) {
+suspend fun getSessionTokenCA(): String = withContext(Dispatchers.IO) {
 
     val url = "${AppConst.BASEURL_CA}/api/ekyc/init"
     val jsonBody = Gson().toJson(GetTokenRequest())
@@ -113,17 +113,16 @@ suspend fun getSessionTokenCAa(): String = withContext(Dispatchers.IO) {
 
         val result = Gson().fromJson(responseBody, GetTokenResponse::class.java)
 
-        // GÁN SESSION_ID
-        DataUtil.SESSION_ID_CA =  result.ekycSessionId // short_token || ekycSessionId
-        Log.d("SESSION_ID_CA", "Complete SESSION_ID_CA: ${DataUtil.SESSION_ID_CA}")
+        // GÁN ekycSessionId
+        DataUtil.ekycSessionId =  result.ekycSessionId
+        Log.d("SESSION_ID_CA", "Complete SESSION_ID_CA: ${DataUtil.ekycSessionId}")
         // 👉 SAU KHI CÓ SESSION → GỌI LẤY TOKEN KLP
         val token = getTokenSessionCAFromKLP()
+        val token2 = getTokenSessionKLPFromKLP()
         // ✅ GÁN TOKEN
         DataUtil.TOKEN_CA_KLP = token
         Log.d("TOKEN_CA_KLP", "Complete TOKEN_CA_KLP: ${DataUtil.TOKEN_CA_KLP}")
-
-        Log.d("TOKEN_CA_KLP", "Complete TOKEN_CA_KLP: ${DataUtil.TOKEN_CA_KLP}")
-        return@withContext result.ekycSessionId.toString()
+        return@withContext result.short_token.toString()
     }
 }
 
@@ -131,7 +130,53 @@ suspend fun getTokenSessionCAFromKLP(): String = withContext(Dispatchers.IO) {
     val url = "${AppConst.BASEURL_CA}/api/ekyc/kalapa/init-session"
 
     val bodyObject = GetTokenRequest(
-        ekycSessionId = DataUtil.SESSION_ID_CA.toString(),
+        ekycSessionId = DataUtil.ekycSessionId.toString(),
+        verify_check = false,
+        fraud_check = true,
+        accept_flash = false,
+        strict_quality_check = true,
+        scan_full_information = true,
+        allow_sdk_full_results = true,
+        flow = AppConst.FLOW
+    )
+
+    val jsonBody = Gson().toJson(bodyObject)
+    val body = jsonBody.toRequestBody("application/json".toMediaType())
+
+    val request = Request.Builder()
+        .url(url)
+        .post(body)
+        .addHeader("Authorization", "Bearer ${DataUtil.TOKEN}")
+        .addHeader("Content-Type", "application/json")
+        .build()
+
+    val client = OkHttpClient()
+
+    client.newCall(request).execute().use { response ->
+
+        if (!response.isSuccessful) {
+            throw Exception("HTTP ${response.code}")
+        }
+
+        val responseBody = response.body?.string()
+            ?: throw Exception("Empty response")
+
+        // ✅ Log raw response (giống Swift)
+        Log.d("TOKEN_CA_KLP", "Raw response: $responseBody")
+
+        val result = Gson().fromJson(responseBody, GetTokenResponse::class.java)
+
+        DataUtil.SESSION_ID_CA = result.short_token
+
+        return@withContext result.token.toString()
+    }
+}
+
+suspend fun getTokenSessionKLPFromKLP(): String = withContext(Dispatchers.IO) {
+    val url = "${AppConst.BASEURL_CA}/api/ekyc/kalapa/init-session"
+
+    val bodyObject = GetTokenRequest(
+        ekycSessionId = DataUtil.ekycSessionId.toString(),
         verify_check = false,
         fraud_check = true,
         accept_flash = false,
@@ -172,6 +217,7 @@ suspend fun getTokenSessionCAFromKLP(): String = withContext(Dispatchers.IO) {
         return@withContext result.token.toString()
     }
 }
+
 
 fun logout(context: Context) {
     // Clear local token

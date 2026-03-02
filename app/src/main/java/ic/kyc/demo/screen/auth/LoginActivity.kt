@@ -12,6 +12,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import android.widget.Button
 import android.widget.EditText
+import ic.kyc.demo.auth.getSessionTokenCA
 import ic.kyc.demo.auth.getSessionTokenKala
 import ic.kyc.demo.auth.loginCA
 import kotlin.coroutines.cancellation.CancellationException
@@ -45,8 +46,8 @@ class LoginActivity : AppCompatActivity() {
             try {
                 delay(800)
                 loginCA(username, password)
-                //getSessionTokenCA()
-                getSessionTokenKala()
+                getSessionTokenCA()
+                //getSessionTokenKala()
                 if (isNavigated) return@launch
                 isNavigated = true
 

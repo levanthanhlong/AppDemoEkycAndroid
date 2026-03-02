@@ -56,6 +56,7 @@ class MainActivity : AppCompatActivity() {
             appId = AppConst.APP_ID,
             isUseCmcGateway = true,
             rawDataDelegate = null,
+            ekycSessionId = DataUtil.ekycSessionId,
             session = DataUtil.SESSION_ID_Kala,
             session_CA = DataUtil.SESSION_ID_CA,
             baseUrl_CA = AppConst.BASEURL_CA,
