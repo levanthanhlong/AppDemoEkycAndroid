@@ -43,7 +43,7 @@ android {
 }
 
 dependencies {
-    implementation("com.mobilecs:cmcekyc-sdk:1.0.34")
+    implementation("com.mobilecs:cmcekyc-sdk:1.0.35")
     implementation("com.squareup.okhttp3:okhttp:4.12.0")
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.runtime.ktx)
