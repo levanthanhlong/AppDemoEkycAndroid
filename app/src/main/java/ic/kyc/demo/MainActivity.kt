@@ -55,7 +55,7 @@ class MainActivity : AppCompatActivity() {
         val config = CmcEkycConfig(
             appId = AppConst.APP_ID,
             isUseCmcGateway = true,
-            rawDataDelegate = null,
+            rawDataDelegate = rawDataDelegate,
             ekycSessionId = DataUtil.ekycSessionId,
             session = DataUtil.SESSION_ID_Kala,
             session_CA = DataUtil.SESSION_ID_CA,

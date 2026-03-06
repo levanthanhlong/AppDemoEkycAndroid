@@ -53,41 +53,6 @@ data class GetTokenResponse(
    API CALL
    ======================= */
 
-suspend fun getSessionTokenKala(): String = withContext(Dispatchers.IO) {
-
-    // BASEURL_CA || BASEURL
-    val url = "${AppConst.BASEURL_CA}/api/ekyc/init"
-    //val url = "${AppConst.BASEURL_CA}/api/ekyc/init"
-    val jsonBody = Gson().toJson(GetTokenRequest())
-    val body = jsonBody.toRequestBody("application/json".toMediaType())
-
-    val request = Request.Builder()
-        .url(url)
-        .post(body)
-        .addHeader("Authorization", "Bearer ${DataUtil.ACCESS_TOKEN_KALA}") // TOKEN || ACCESS_TOKEN_KALA
-        .addHeader("Content-Type", "application/json")
-        .build()
-
-    val client = OkHttpClient()
-    client.newCall(request).execute().use { response ->
-
-        if (!response.isSuccessful) {
-            throw Exception("HTTP ${response.code}")
-        }
-
-        val responseBody = response.body?.string()
-            ?: throw Exception("Empty response")
-
-        val result = Gson().fromJson(responseBody, GetTokenResponse::class.java)
-
-        // GÁN SESSION_ID
-        DataUtil.SESSION_ID_Kala =  result.short_token // short_token || ekycSessionId
-        Log.d("SESSION_ID", "Complete SESSION_ID: ${DataUtil.SESSION_ID_Kala}")
-        return@withContext result.short_token.toString()
-    }
-}
-
-
 suspend fun getSessionTokenCA(): String = withContext(Dispatchers.IO) {
 
     val url = "${AppConst.BASEURL_CA}/api/ekyc/init"
@@ -117,8 +82,9 @@ suspend fun getSessionTokenCA(): String = withContext(Dispatchers.IO) {
         DataUtil.ekycSessionId =  result.ekycSessionId
         Log.d("SESSION_ID_CA", "Complete SESSION_ID_CA: ${DataUtil.ekycSessionId}")
         // 👉 SAU KHI CÓ SESSION → GỌI LẤY TOKEN KLP
-        val token = getTokenSessionCAFromKLP()
         val token2 = getTokenSessionKLPFromKLP()
+        val token = getTokenSessionCAFromKLP()
+
         // ✅ GÁN TOKEN
         DataUtil.TOKEN_CA_KLP = token
         Log.d("TOKEN_CA_KLP", "Complete TOKEN_CA_KLP: ${DataUtil.TOKEN_CA_KLP}")
