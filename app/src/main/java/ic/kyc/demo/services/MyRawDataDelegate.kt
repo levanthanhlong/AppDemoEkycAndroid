@@ -5,6 +5,9 @@ import com.mobilecs.cmcekyc_sdk.models.CmcEkycSdkMediaType
 
 
 import android.util.Log
+import com.mobilecs.cmcekyc_sdk.CmcEkycSdk
+import org.json.JSONObject
+import vn.kalapa.ekyc.models.NFCRawData
 
 class MyRawDataDelegate : CmcRawDataDelegate {
 
@@ -46,6 +49,19 @@ class MyRawDataDelegate : CmcRawDataDelegate {
     }
 
     override fun handleNFCData(idCardNumber: String, nfcRawData: String) {
+
+        // 1. Parse NFC raw data
+        val nfcData = NFCRawData.fromJson(nfcRawData)
+        Log.d("CmcEkycSdk.TAG", "Received NFC Data: dg1=${nfcData.dg1}")
+
+        // 2. Build JSON body
+        val jsonBody = JSONObject().apply {
+            put("sod", nfcData.sod)
+            put("dg1", nfcData.dg1)
+            put("dg2", nfcData.dg2)
+            put("dg13", nfcData.dg13)
+            put("idCard", idCardNumber)
+        }
         // Xử lý dữ liệu NFC
         Log.d(TAG, "NFC data received")
         Log.d(TAG, " - ID Card Number: $idCardNumber")

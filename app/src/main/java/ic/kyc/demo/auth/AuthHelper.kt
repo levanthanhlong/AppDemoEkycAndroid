@@ -133,6 +133,7 @@ suspend fun getTokenSessionCAFromKLP(): String = withContext(Dispatchers.IO) {
         val result = Gson().fromJson(responseBody, GetTokenResponse::class.java)
 
         DataUtil.SESSION_ID_CA = result.short_token
+        Log.d("SESSION_ID_CA", "SESSION_ID_CA: ${DataUtil.SESSION_ID_CA}")
 
         return@withContext result.token.toString()
     }
@@ -179,7 +180,7 @@ suspend fun getTokenSessionKLPFromKLP(): String = withContext(Dispatchers.IO) {
         val result = Gson().fromJson(responseBody, GetTokenResponse::class.java)
 
         DataUtil.SESSION_ID_Kala = result.short_token
-
+        Log.d("SESSION_ID_Kala", "SESSION_ID_Kala: ${DataUtil.SESSION_ID_Kala}")
         return@withContext result.token.toString()
     }
 }
@@ -200,7 +201,7 @@ fun logout(context: Context) {
 }
 
 
-suspend fun loginCA(username: String, password: String ): String = withContext(Dispatchers.IO) {
+suspend fun loginCA1(username: String, password: String ): String = withContext(Dispatchers.IO) {
     val url = "${AppConst.BASEURL_CA}/api/auth/login"
 
     val jsonBody = Gson().toJson(LoginRequest(username, password))
@@ -228,6 +229,53 @@ suspend fun loginCA(username: String, password: String ): String = withContext(D
         // Gán TOKEN
         DataUtil.TOKEN = result.data.token
         Log.d("TOKEN", "Complete TOKEN: ${DataUtil.TOKEN}")
+        return@withContext result.data.token
+    }
+}
+suspend fun loginCA(username: String, password: String): String = withContext(Dispatchers.IO) {
+    val url = "${AppConst.BASEURL_CA}/api/auth/login"
+
+    val jsonBody = Gson().toJson(LoginRequest(username, password))
+
+    // Log REQUEST
+    Log.d("LOGIN_CA", "=== REQUEST ===")
+    Log.d("LOGIN_CA", "URL: $url")
+    Log.d("LOGIN_CA", "Body: $jsonBody")
+
+    val body = jsonBody.toRequestBody("application/json".toMediaType())
+
+    val request = Request.Builder()
+        .url(url)
+        .post(body)
+        .addHeader("Content-Type", "application/json")
+        .build()
+
+    val client = OkHttpClient()
+
+    client.newCall(request).execute().use { response ->
+        // Log RESPONSE
+        Log.d("LOGIN_CA", "=== RESPONSE ===")
+        Log.d("LOGIN_CA", "Code: ${response.code}")
+        Log.d("LOGIN_CA", "Message: ${response.message}")
+        Log.d("LOGIN_CA", "Headers: ${response.headers}")
+
+        if (!response.isSuccessful) {
+            val errorBody = response.body?.string()
+            Log.e("LOGIN_CA", "Error Body: $errorBody")
+            throw Exception("HTTP ${response.code}")
+        }
+
+        val responseBody = response.body?.string()
+            ?: throw Exception("Empty response")
+
+        Log.d("LOGIN_CA", "Response Body: $responseBody")
+
+        val result = Gson().fromJson(responseBody, ApiResponse::class.java)
+
+        // Gán TOKEN
+        DataUtil.TOKEN = result.data.token
+        Log.d("LOGIN_CA", "TOKEN: ${DataUtil.TOKEN}")
+
         return@withContext result.data.token
     }
 }

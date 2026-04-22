@@ -75,6 +75,8 @@ class MainActivity : AppCompatActivity() {
             onComplete = { result ->
                 // EKYC thành công
                 Log.d("CmcEkycSdk", "Complete result: $result")
+                Log.d("CmcEkycSdk", "Complete selfie is_matched: ${result.selfie_data?.is_matched}")
+                Log.d("CmcEkycSdk", "Complete selfie matching_score: ${result.selfie_data?.matching_score}")
                 Log.d("CmcEkycSdk", "Complete nfc_data name : ${result.nfc_data?.name}")
                 // Ví dụ lấy NFC data
                 val nfcData = result.nfc_data
